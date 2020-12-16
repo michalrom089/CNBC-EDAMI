@@ -126,7 +126,7 @@ def test_reversed_k_neighborhood():
     assert 4 in r_k_n
 
 
-def test_ndf():
+def test_neighborhood_dense_factor():
     # Assign
     p_idx = 0
     data = [
@@ -142,7 +142,7 @@ def test_ndf():
     dist_ndarr = calc_distance_ndarray(df, dist_method="euclidean")
 
     # Act
-    ndf = neighborhood_df(dist_ndarr, p_idx, k=k)
+    ndf = neighborhood_dense_factor(dist_ndarr, p_idx, k=k)
 
     # Assert
     assert type(ndf) == float

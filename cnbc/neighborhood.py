@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 from scipy.spatial.distance import cdist
 
@@ -127,7 +126,7 @@ def reversed_k_neighborhood(dist_ndarr, p_idx, k):
     return np.array(r_k_n)
 
 
-def neighborhood_df(dist_ndarr, p_idx, k):
+def neighborhood_dense_factor(dist_ndarr, p_idx, k):
     """ neighborhood-based  density  factor  of  a  point
 
     Args:
