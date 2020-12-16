@@ -3,16 +3,26 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 
-def make_distance_df(data):
-    dist = cdist(data, data, "euclidean")
-    return pd.DataFrame(data=dist)
-
-
-def eps_neighborhood(data, p_idx, eps=0.3, dist_method="euclidean"):
-    """ Epsilon neighborhood
+def calc_distance_ndarray(data, dist_method="euclidean"):
+    """  Calculates distance   
 
     Args:
         data : pd.DataFrame
+        dist_method : str or callable
+
+    Returns:
+        np.ndarray :
+            shape(nd.array) = [len(data), len(data)]
+    """
+    dist = cdist(data, data, "euclidean")
+    return dist
+
+
+def eps_neighborhood(dist_ndarr, p_idx, eps=0.3):
+    """ Epsilon neighborhood
+
+    Args:
+        dist_ndarr : np.ndarray
         p_idx : int
             index of the considered point
         eps : float
@@ -23,25 +33,22 @@ def eps_neighborhood(data, p_idx, eps=0.3, dist_method="euclidean"):
             points indx that meet the condition of min eps
     """
 
-    dist = cdist(data, [data.iloc[p_idx]], metric=dist_method)
-    # reduce dimensions (cdist produces ''matrix'')
-    dist = dist[:, 0]
+    # get distance array for considered point
+    dist = dist_ndarr[p_idx, :]
+    q = np.argwhere(dist <= eps)
 
-    q = np.argwhere(dist < eps)
-    q_without_p = np.delete(q, p_idx)
-
-    return q_without_p
+    return q
 
 
-def k_neighborhood(data, p_idx, k, dist_method="euclidean"):
+def k_neighborhood(dist_ndarr, p_idx, k):
     """ k-neighborhood or kNN(p)
 
     Args:
-        data : pd.DataFrame
+        dist_ndarr : np.ndarray
         p_idx : int
             index of the considered point
         k : int
-            number of points satisfying the kNN(p) condition
+            density of a point
 
     Return:
         np.array :
@@ -52,39 +59,91 @@ def k_neighborhood(data, p_idx, k, dist_method="euclidean"):
 
     assert k > 0
 
-    dist = cdist(data, [data.iloc[p_idx]], metric=dist_method)
-    # reduce dimensions (cdist produces ''matrix'')
-    dist = dist[:, 0]
+    # get distance array for considered point
+    dist = dist_ndarr[p_idx, :]
     # sort indexes of dist in a ascending order
     dist_idx_asc = np.argsort(dist)
-    # remove p_idx from sorted indexes
-    dist_idx_asc = np.delete(dist_idx_asc, p_idx)
 
     # return first k indexes
     return dist_idx_asc[:k]
 
 
-def kknn(data, p):
-    """ punctured k+-neighborhood
+def punctured_k_neighborhood(dist_ndarr, p_idx, k):
+    """ punctured_k_neighborhood(p)
+
+    Args:
+        dist_ndarr : np.ndarray
+        p_idx : int
+            index of the considered point
+        k : int
+            density of a point
+
+    Return:
+        np.array :
+            points indx that meet the condition punctured_k_neighborhood(p) condition
+
+    @see: http://ceur-ws.org/Vol-1269/paper113.pdf Section 3, Definition 3 
     """
-    pass
+
+    assert k > 0
+
+    k_n = k_neighborhood(dist_ndarr, p_idx, k=k)
+
+    # remove p_idx from sorted indexes
+    return k_n[k_n != p_idx]
 
 
-def rknn(data, p):
-    """ reversed  punctured k+-neighborhood  of  a  point p
+def reversed_k_neighborhood(dist_ndarr, p_idx, k):
+    """ reversed_k_neighborhood(p)
+
+    Args:
+        dist_ndarr : np.ndarray
+        p_idx : int
+            index of the considered point
+        k : int
+            density of a point
+
+    Return:
+        np.array :
+            points indx that meet the condition reversed_k_neighborhood(p) condition
+
+    @see: http://ceur-ws.org/Vol-1269/paper113.pdf Section 3, Definition 4
     """
-    pass
+
+    assert k > 0
+    r_k_n = list()
+
+    # brute force
+    for q_idx in range(len(dist_ndarr)):
+        # skip p_idx
+        if q_idx == p_idx:
+            continue
+
+        p_k_n = punctured_k_neighborhood(dist_ndarr, q_idx, k=k)
+        if p_idx in p_k_n:
+            r_k_n.append(q_idx)
+
+    # remove p_idx from sorted indexes
+    return np.array(r_k_n)
 
 
-def ndf(data, p):
-    pass
+def neighborhood_df(dist_ndarr, p_idx, k):
+    """ neighborhood-based  density  factor  of  a  point
 
+    Args:
+        dist_ndarr : np.ndarray
+        p_idx : int
+            index of the considered point
+        k : int
+            density of a point
 
-if __name__ == "__main__":
-    iris = pd.read_csv("./iris_csv.csv")
-    cl = iris["class"]
+    Return:
+        float:
+            ndf value
 
-    data = iris[["sepallength", "sepalwidth", "petallength", "petalwidth"]]
-    eps_n = k_neighborhood(data.head(), 0, 2)
+    @see: http://ceur-ws.org/Vol-1269/paper113.pdf Section 3, Definition 5 
+    """
+    r_k_n = reversed_k_neighborhood(dist_ndarr, p_idx, k)
+    p_k_n = punctured_k_neighborhood(dist_ndarr, p_idx, k)
 
-    print(eps_n)
+    return len(r_k_n)/len(p_k_n)
