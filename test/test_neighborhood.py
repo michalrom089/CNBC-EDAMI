@@ -1,5 +1,5 @@
 import pandas as pd
-from cnbc.cnbc import *
+from cnbc.neighborhood import *
 
 
 def test_eps_neighborhood():
