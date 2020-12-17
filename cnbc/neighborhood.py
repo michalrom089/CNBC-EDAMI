@@ -95,12 +95,11 @@ def reversed_k_neighborhood(p_k_n):
 
     s = p_k_n.shape
     r_k_n = np.empty(s[0], dtype=object)
+    r_k_n = [list() for i in range(len(r_k_n))]
 
     for p_idx, pp_k_n in enumerate(p_k_n):
         # reversed_k_neighborhood for p_idx
         for el in pp_k_n:
-            if not r_k_n[el]:
-                r_k_n[el] = list()
             r_k_n[el].append(p_idx)
 
     # remove p_idx from sorted indexes
