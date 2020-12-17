@@ -17,13 +17,11 @@ def calc_distance_ndarray(data, dist_method="euclidean"):
     return dist
 
 
-def eps_neighborhood(dist_ndarr, p_idx, eps=0.3):
+def eps_neighborhood(dist_ndarr, eps=0.3):
     """ Epsilon neighborhood
 
     Args:
         dist_ndarr : np.ndarray
-        p_idx : int
-            index of the considered point
         eps : float
             minimum distance
 
@@ -33,19 +31,16 @@ def eps_neighborhood(dist_ndarr, p_idx, eps=0.3):
     """
 
     # get distance array for considered point
-    dist = dist_ndarr[p_idx, :]
-    q = np.argwhere(dist <= eps)
+    q = np.argwhere(dist_ndarr <= eps)
 
     return q
 
 
-def k_neighborhood(dist_ndarr, p_idx, k):
+def k_neighborhood(dist_ndarr, k):
     """ k-neighborhood or kNN(p)
 
     Args:
         dist_ndarr : np.ndarray
-        p_idx : int
-            index of the considered point
         k : int
             density of a point
 
@@ -58,24 +53,20 @@ def k_neighborhood(dist_ndarr, p_idx, k):
 
     assert k > 0
 
-    # get distance array for considered point
-    dist = dist_ndarr[p_idx, :]
     # sort indexes of dist in a ascending order
-    dist_idx_asc = np.argsort(dist)
-
+    dist_idx_asc = np.argsort(dist_ndarr)
     # return first k indexes
-    return dist_idx_asc[:k]
+    k_idx = dist_idx_asc[:, :k]
+
+    return k_idx
 
 
-def punctured_k_neighborhood(dist_ndarr, p_idx, k):
+def punctured_k_neighborhood(k_n):
     """ punctured_k_neighborhood(p)
 
     Args:
-        dist_ndarr : np.ndarray
-        p_idx : int
-            index of the considered point
-        k : int
-            density of a point
+        k_n : np.ndarray
+            k neighborhood 
 
     Return:
         np.array :
@@ -84,23 +75,16 @@ def punctured_k_neighborhood(dist_ndarr, p_idx, k):
     @see: http://ceur-ws.org/Vol-1269/paper113.pdf Section 3, Definition 3 
     """
 
-    assert k > 0
-
-    k_n = k_neighborhood(dist_ndarr, p_idx, k=k)
-
-    # remove p_idx from sorted indexes
-    return k_n[k_n != p_idx]
+    # remove point from their k_neighborhood from sorted indexes
+    return k_n[:, 1:]
 
 
-def reversed_k_neighborhood(dist_ndarr, p_idx, k):
+def reversed_k_neighborhood(p_k_n):
     """ reversed_k_neighborhood(p)
 
     Args:
-        dist_ndarr : np.ndarray
-        p_idx : int
-            index of the considered point
-        k : int
-            density of a point
+        p_k_n : np.ndarray
+            punctured k neighborhood
 
     Return:
         np.array :
@@ -109,21 +93,21 @@ def reversed_k_neighborhood(dist_ndarr, p_idx, k):
     @see: http://ceur-ws.org/Vol-1269/paper113.pdf Section 3, Definition 4
     """
 
-    assert k > 0
-    r_k_n = list()
-
+    s = p_k_n.shape
+    r_k_n = np.zeros(shape=(s[0]*s[1], 2), dtype=int)
+    print(s)
     # brute force
-    for q_idx in range(len(dist_ndarr)):
-        # skip p_idx
-        if q_idx == p_idx:
-            continue
+    for p_idx, pp_k_n in enumerate(p_k_n):
+        # reversed_k_neighborhood for p_idx
+        pr_k_n = np.array(list(zip(pp_k_n, [p_idx]*len(pp_k_n))))
 
-        p_k_n = punctured_k_neighborhood(dist_ndarr, q_idx, k=k)
-        if p_idx in p_k_n:
-            r_k_n.append(q_idx)
+        start_idx = p_idx * s[1]
+        end_idx = (p_idx+1) * s[1]
+
+        r_k_n[start_idx:end_idx, :] = pr_k_n
 
     # remove p_idx from sorted indexes
-    return np.array(r_k_n)
+    return r_k_n
 
 
 def neighborhood_dense_factor(dist_ndarr, p_idx, k):

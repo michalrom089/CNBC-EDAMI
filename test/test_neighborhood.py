@@ -17,14 +17,16 @@ def test_eps_neighborhood():
     dist_ndarr = calc_distance_ndarray(df, dist_method="euclidean")
 
     # Act
-    eps_n = eps_neighborhood(dist_ndarr, p_idx, eps=0.3)
-
+    eps_n = eps_neighborhood(dist_ndarr, eps=0.3)
+    
     # Assert
-    assert len(eps_n) == 3
-    assert p_idx in eps_n
-    assert 3 in eps_n
-    assert 4 in eps_n
 
+    # get eps_neighborhood for p_idx point
+    peps_n = eps_n[eps_n[:, 0] == p_idx, 1]
+    assert len(peps_n) == 3
+    assert p_idx in peps_n
+    assert 3 in peps_n
+    assert 4 in peps_n
 
 def test_k_neighborhood():
     # Assign
@@ -42,12 +44,15 @@ def test_k_neighborhood():
     dist_ndarr = calc_distance_ndarray(df, dist_method="euclidean")
 
     # Act
-    k_n = k_neighborhood(dist_ndarr, p_idx, k=k)
+    k_n = k_neighborhood(dist_ndarr, k=k)
 
     # Assert
-    assert len(k_n) == k
-    assert p_idx in k_n
-    assert 1 in k_n
+    
+    # get eps_neighborhood for p_idx point
+    pk_n = k_n[p_idx, :]
+    assert len(pk_n) == k
+    assert p_idx in pk_n
+    assert 1 in pk_n
 
 
 def test_punctured_k_neighborhood():
@@ -66,12 +71,16 @@ def test_punctured_k_neighborhood():
     dist_ndarr = calc_distance_ndarray(df, dist_method="euclidean")
 
     # Act
-    p_k_n = punctured_k_neighborhood(dist_ndarr, p_idx, k=k)
+    k_n = k_neighborhood(dist_ndarr, k=k)
+    p_k_n = punctured_k_neighborhood(k_n)
 
     # Assert
-    assert len(p_k_n) == k-1
-    assert not p_idx in p_k_n
-    assert 1 in p_k_n
+    
+    # get eps_neighborhood for p_idx point
+    pp_k_n = p_k_n[p_idx, :]
+    assert len(pp_k_n) == k-1
+    assert not p_idx in pp_k_n
+    assert 1 in pp_k_n
 
 
 def test_reversed_k_neighborhood():
@@ -90,33 +99,9 @@ def test_reversed_k_neighborhood():
     dist_ndarr = calc_distance_ndarray(df, dist_method="euclidean")
 
     # Act
-    r_k_n = reversed_k_neighborhood(dist_ndarr, p_idx, k=k)
-
-    # Assert
-    assert len(r_k_n) == 3
-    assert not p_idx in r_k_n
-    assert 0 in r_k_n
-    assert 3 in r_k_n
-    assert 4 in r_k_n
-
-
-def test_reversed_k_neighborhood():
-    # Assign
-    p_idx = 1
-    data = [
-        [0, 0],
-        [1, 1],
-        [5, 6],
-        [2, 3],
-        [2, 3],
-        [1, 7],
-    ]
-    k = 3
-    df = pd.DataFrame(data=data)
-    dist_ndarr = calc_distance_ndarray(df, dist_method="euclidean")
-
-    # Act
-    r_k_n = reversed_k_neighborhood(dist_ndarr, p_idx, k=k)
+    k_n = k_neighborhood(dist_ndarr, k=k)
+    p_k_n = punctured_k_neighborhood(k_n)
+    r_k_n = reversed_k_neighborhood(p_k_n)
 
     # Assert
     assert len(r_k_n) == 3

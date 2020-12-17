@@ -1,5 +1,28 @@
 from .neighborhood import calc_distance_ndarray, neighborhood_dense_factor
 
+import numpy as np
+from scipy.spatial.distance import cdist
+
+
+class CNBC():
+
+    def __init__(self, data):
+        self.data = data
+
+    def calc_distance_ndarray(self, dist_method="euclidean"):
+        """  Calculates distance   
+
+        Args:
+            data : pd.DataFrame
+            dist_method : str or callable
+
+        Returns:
+            np.ndarray :
+                shape(nd.array) = [len(data), len(data)]
+        """
+        dist = cdist(data, data, "euclidean")
+        return dist
+
 
 def cnbc(data, k):
     """ Neighborhood-Based Clustering with Constraints 
