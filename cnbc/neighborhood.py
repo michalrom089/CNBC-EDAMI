@@ -26,7 +26,7 @@ def eps_neighborhood(dist_ndarr, eps=0.3):
             minimum distance
 
     Return:
-        np.array :
+        np.array[int] :
             points indx that meet the condition of min eps
     """
 
@@ -45,7 +45,7 @@ def k_neighborhood(dist_ndarr, k):
             density of a point
 
     Return:
-        np.array :
+        np.array[int] :
             points indx that meet the condition kNN(p) condition
 
     @see: http://ceur-ws.org/Vol-1269/paper113.pdf Section 3, Definition 2 
@@ -69,7 +69,7 @@ def punctured_k_neighborhood(k_n):
             k neighborhood 
 
     Return:
-        np.array :
+        np.array[int] :
             points indx that meet the condition punctured_k_neighborhood(p) condition
 
     @see: http://ceur-ws.org/Vol-1269/paper113.pdf Section 3, Definition 3 
@@ -87,46 +87,42 @@ def reversed_k_neighborhood(p_k_n):
             punctured k neighborhood
 
     Return:
-        np.array :
+        np.array[list] :
             points indx that meet the condition reversed_k_neighborhood(p) condition
 
     @see: http://ceur-ws.org/Vol-1269/paper113.pdf Section 3, Definition 4
     """
 
     s = p_k_n.shape
-    r_k_n = np.zeros(shape=(s[0]*s[1], 2), dtype=int)
-    print(s)
-    # brute force
+    r_k_n = np.empty(s[0], dtype=object)
+
     for p_idx, pp_k_n in enumerate(p_k_n):
         # reversed_k_neighborhood for p_idx
-        pr_k_n = np.array(list(zip(pp_k_n, [p_idx]*len(pp_k_n))))
-
-        start_idx = p_idx * s[1]
-        end_idx = (p_idx+1) * s[1]
-
-        r_k_n[start_idx:end_idx, :] = pr_k_n
+        for el in pp_k_n:
+            if not r_k_n[el]:
+                r_k_n[el] = list()
+            r_k_n[el].append(p_idx)
 
     # remove p_idx from sorted indexes
     return r_k_n
 
 
-def neighborhood_dense_factor(dist_ndarr, p_idx, k):
+def neighborhood_dense_factor(p_k_n, r_k_n):
     """ neighborhood-based  density  factor  of  a  point
 
     Args:
-        dist_ndarr : np.ndarray
-        p_idx : int
-            index of the considered point
-        k : int
-            density of a point
+        p_k_n : np.ndarray[int]
+            punctured k neighborhood
+        r_k_n : np.array[list]
+            reversed k neighborhood
 
     Return:
-        float:
+        nd.array[float]:
             ndf value
 
     @see: http://ceur-ws.org/Vol-1269/paper113.pdf Section 3, Definition 5 
     """
-    r_k_n = reversed_k_neighborhood(dist_ndarr, p_idx, k)
-    p_k_n = punctured_k_neighborhood(dist_ndarr, p_idx, k)
+    len_r = np.array(list(map(lambda x: len(x), r_k_n)), dtype=float)
+    len_p = p_k_n.shape[1]
 
-    return len(r_k_n)/len(p_k_n)
+    return len_r / len_p
