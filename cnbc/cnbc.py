@@ -3,7 +3,9 @@ from copy import copy
 import numpy as np
 import pandas as pd
 
-from .neighborhood import calc_distance_ndarray, k_neighborhood, punctured_k_neighborhood, reversed_k_neighborhood, neighborhood_dense_factor
+from .neighborhood import calc_distance_ndarray, k_neighborhood
+from .neighborhood import punctured_k_neighborhood, reversed_k_neighborhood
+from .neighborhood import neighborhood_dense_factor
 
 
 UNCLASSIFIED = "unclassified"
@@ -76,7 +78,7 @@ class CNBC():
                 # add all point r from must_link(q) such r.ndf >=1 to dp_set
                 dp_set.update(self.get_involved_link(q, must_link))
 
-            while(len(dp_set) == 0):
+            while(len(dp_set) != 0):
                 s = dp_set.pop()
 
                 # for each unclassified point from (punctured_k_neighborhood(s) \ deffered_points)
