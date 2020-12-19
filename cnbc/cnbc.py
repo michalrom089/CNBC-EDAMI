@@ -1,15 +1,18 @@
 from copy import copy
+from enum import Enum
 
 import numpy as np
 import pandas as pd
 
-from .neighborhood import calc_distance_ndarray, k_neighborhood
-from .neighborhood import punctured_k_neighborhood, reversed_k_neighborhood
-from .neighborhood import neighborhood_dense_factor
+from cnbc.neighborhood import calc_distance_ndarray, k_neighborhood
+from cnbc.neighborhood import punctured_k_neighborhood, reversed_k_neighborhood
+from cnbc.neighborhood import neighborhood_dense_factor
 
 
-UNCLASSIFIED = "unclassified"
-DEFFERED = "deffered"
+class PointClass(Enum):
+    NOISE = 0
+    UNCLASSIFIED = 1
+    DEFFERED = 2
 
 
 class CNBC():
@@ -48,63 +51,71 @@ class CNBC():
         r_k_n = reversed_k_neighborhood(p_k_n)
         ndf = neighborhood_dense_factor(p_k_n, r_k_n)
 
-        cluster = pd.Series([UNCLASSIFIED]*len(data))
+        # label all points as UNCLASSIFIED
+        cluster = pd.Series([PointClass.UNCLASSIFIED]*len(data))
         deffered_p = set()
         dp_set = set()
 
         cluster_id = 0
 
-        for q in self.unpack_link(must_link) + self.unpack_link(cannot_link):
-            cluster[q] = DEFFERED
-            for p in p_k_n[q, :]:
-                cluster[q] = DEFFERED
+        for q in self.unpack_link(cannot_link):
+            # label q as deffered
+            cluster[q] = PointClass.DEFFERED
             deffered_p.add(q)
+
+            # label all points from the p_k_n(q) as deffered
+            # for p in p_k_n[q, :]:
+            #     cluster[p] = PointClass.DEFFERED
+            #     deffered_p.add(p)
 
         # for each unclassified point that is dense
         for p in np.argwhere(self.is_dense(ndf))[:, 0]:
 
-            if not cluster[p] == UNCLASSIFIED:
+            if not cluster[p] == PointClass.UNCLASSIFIED:
                 continue
 
             cluster[p] = cluster_id
 
             dp_set.clear()
+            dp_set.update(self.get_involved_link_point(p, must_link))
 
             # for each point from (punctured_k_neighborhood(p) \ deffered_points)
-            for q in [el for el in p_k_n[p, :] if el not in deffered_p]:
+            for q in k_n[p, :]:
+                if not cluster[q] == PointClass.UNCLASSIFIED:
+                    continue
+
                 cluster[q] = cluster_id
                 if ndf[q] >= 1:
                     dp_set.add(q)
                 # add all point r from must_link(q) such r.ndf >=1 to dp_set
-                dp_set.update(self.get_involved_link(q, must_link))
+                dp_set.update(self.get_involved_link_point(q, must_link))
 
             while(len(dp_set) != 0):
                 s = dp_set.pop()
 
                 # for each unclassified point from (punctured_k_neighborhood(s) \ deffered_points)
-                for t in [el for el in p_k_n[s, :] if el not in deffered_p]:
-                    if not cluster[p] == UNCLASSIFIED:
+                for t in k_n[s, :]:
+                    if not cluster[t] == PointClass.UNCLASSIFIED:
                         continue
 
                     cluster[t] = cluster_id
                     if ndf[t] >= 1:
                         dp_set.add(t)
-                    involved = self.get_involved_link(t, must_link)
-                    # all all point u from must_link(t) such u.ndf >=1 to dp_set
-                    dp_set.update(
-                        [el for el in involved if self.is_dense(ndf[el])])
+
+                    # all all point u from must_link(t)
+                    dp_set.update(self.get_involved_link_point(t, must_link))
 
             cluster_id = cluster_id + 1
 
         # mark all unlcassified as noise
-        cluster[cluster == UNCLASSIFIED] = "noise"
+        cluster[cluster == PointClass.UNCLASSIFIED] = PointClass.NOISE
 
         self.assign_deffered_point_to_clusters(
-            data, deffered_p, cannot_link, p_k_n, ndf, cluster)
+            data, deffered_p, cannot_link, k_n, ndf, cluster)
 
         return cluster
 
-    def assign_deffered_point_to_clusters(self, data, deffered_p, cannot_link, p_k_n, ndf, cluster):
+    def assign_deffered_point_to_clusters(self, data, deffered_p, cannot_link, k_n, ndf, cluster):
         """ Assign deffered points to clusters
 
             Args:
@@ -124,25 +135,29 @@ class CNBC():
 
             for p in t_deffered_p:
                 assert p in t_deffered_p
+                assert cluster[p] == PointClass.DEFFERED
 
-                for q in p_k_n[p, :]:
-                    if self.is_dense(ndf[q]) and cluster[q] is int and not q in deffered_p:
+                for q in k_n[p, :]:
+                    if self.is_dense(ndf[q]) and cluster[q] != PointClass.NOISE and cluster[q] != PointClass.DEFFERED:
+
                         p_target_cluster = set(cluster[cluster == cluster[q]].index)
-                        p_cannot_link = self.get_involved_link(p, cannot_link)
+                        p_cannot_link = self.get_involved_link_point(p, cannot_link)
 
                         # if there are no points in the target cluster that cannot be linked
-                        is_target_cluster_linkable =  p_target_cluster & p_cannot_link
+                        is_target_cluster_linkable = not p_target_cluster & p_cannot_link
 
                         if is_target_cluster_linkable:
-                            assert not cluster[q] == UNCLASSIFIED
-                            assert not cluster[q] == DEFFERED
                             cluster[p] = cluster[q]
                             a_deffered_p.add(p)
 
+                            break
                 t_deffered_p = t_deffered_p - a_deffered_p
 
             if len(a_deffered_p) == 0:
                 break
+
+        # Mark all deffered points as noise
+        cluster[t_deffered_p] = PointClass.NOISE
 
     def is_dense(self, ndf):
         return ndf >= 1
@@ -155,7 +170,7 @@ class CNBC():
         """
         return [item for t in link for item in t]
 
-    def get_involved_link(self, p_idx, link):
+    def get_involved_link_point(self, p_idx, link):
         # filter elements from the link object that contains p_idx
         l1 = filter(lambda x: p_idx in x, link)
         # get the second element (not p_idx)
