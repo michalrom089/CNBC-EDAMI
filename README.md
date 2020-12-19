@@ -1,29 +1,9 @@
-# EDAMI
+# CNBC0EDAMI
 
-1. pseudo-code
-
-
-2. main assumptions (data structures, list/hashlist etc)
+Python CNBC algorithm implementation.
 
 
-3. datasets (smaller testing, bigger for training)
-
-
-4. how to visiualize the data
-
-
-5. create github repo
-
-
-
-Bibliography:
-http://ceur-ws.org/Vol-1269/paper113.pdf
-www.comsis.org/pdf.php?id=672-1806
-https://pdfs.semanticscholar.org/4055/cadb408eb092c4b1e70ae7279536524384f6.pdf
-by friday
-
-
-## Preparation
+## Installation
 
 1. Download dependencies
 
@@ -48,3 +28,11 @@ pip install -r dev-requirements.txt
 ```
 pytest test
 ```
+
+
+Bibliography:
+* http://ceur-ws.org/Vol-1269/paper113.pdf
+* www.comsis.org/pdf.php?id=672-1806
+* https://pdfs.semanticscholar.org/4055/cadb408eb092c4b1e70ae7279536524384f6.pdf
+
+NOTE: Algorithm description differs slightly from the implementation included in that repo. There are some inaccuracies that are resolved in the [Jave implementation](https://github.com/piotrlasek/clustering/blob/master/src/org/dmtools/clustering/algorithm/CNBC/CDNBCRTree.java) written by the author himself.
