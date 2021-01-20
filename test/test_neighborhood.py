@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from cnbc.neighborhood import *
+from nbc.neighborhood import *
 
 
 def test_eps_neighborhood():
