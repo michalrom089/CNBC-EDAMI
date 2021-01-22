@@ -56,7 +56,7 @@ class CNBC():
         deffered_p = set()
         dp_set = set()
 
-        cluster_id = 0
+        cluster_id = 1
 
         for q in self.unpack_link(cannot_link):
             # label q as deffered
